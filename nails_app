@@ -1,0 +1,216 @@
+from datetime import datetime
+
+
+# --- User Management Code ---
+users = {
+    "admin": {"password": "admin123", "role": "admin"},
+    "user1": {"password": "password1", "role": "user"},
+}
+current_user = None
+
+def login():
+    global current_user
+    print("\n--- Login ---")
+    while True:
+        username = input("Username: ").strip()
+        password = input("Password: ").strip()
+
+        if username in users and users[username]["password"] == password:
+            current_user = {"username": username, "role": users[username]["role"]}
+            print(f"Welcome, {username}!")
+            break
+        else:
+            print("Invalid username or password. Please try again.")
+
+# --- Your Existing Task Management Code ---
+
+
+def main():
+    todo_list = []  # A list to store all tasks
+
+    login()  # Require login before accessing the system
+
+    while True:
+        print("\nMeniu Principal:")
+        print("1. Adauga o programare")
+        print("2. Editeaza o programare")
+        print("3. Sterge o programare")
+        print("4. Afiseaza toate programarile")
+        print("5. Iesire")
+
+        choice = input("\nSelectati o optiune: ").strip()
+
+        if choice == '1':
+            task = handle_input()
+            todo_list.append(task)
+            print("\nProgramarea a fost adaugata cu succes.")
+
+        elif choice == '2':
+            edit_task(todo_list)
+        elif choice == '3':
+            delete_task(todo_list)
+        elif choice == '4':
+            display_tasks(todo_list)
+        elif choice == '5':
+            print("La redevere!")
+            break
+
+        else:
+            print("Optiune invalida, va rugam sa incercati din nou.")
+
+
+def handle_input():
+    while True:
+        name = input("\nIntroduceti numele persoanei programate: ")
+        if not name:
+            print("Numele persoanei nu poate fi lasat gol")
+
+        elif len(name) > 50:
+            print("Numele persoanei programate poate avea maxim 50 de caractere")
+        else:
+            break
+
+    print("Numele clientei este : %s" % name)
+
+    while True:
+        date = input("\nIntroduceti data pentru programarea dumneavoastra dupa modelul ZZ-LL-AAAA: ")
+        try:
+            # Try to parse the input into a datetime object
+            date_object = datetime.strptime(date, "%d-%m-%Y")
+            break
+
+        except ValueError:
+            # If there’s a ValueError, the input was not in the correct format
+            print("Data trebuie sa fie in formatul ZZ-LL-AAAA. Va rugam sa incercati din nou.")
+
+    print("Data programarii este: %s" % date)
+
+    while True:
+        time = input("\nSelectati ora dorita pentru programare, dupa modelul 'HH:MM': ")
+        try:
+            time_object = datetime.strptime(time, "%H:%M")
+            break
+
+        except ValueError:
+            print("Ora selectata trebuie sa aiba formatul 'HH:MM'. Va rugam sa incercati din nou.")
+
+    print("Ora programarii este: %s" %time)
+
+    while True:
+        service_type = input("\nSelectati tipul serviciului (Manichiura, Pedichiura, Amandoua): ").strip().capitalize()
+        if service_type in ["Manichiura", "Pedichiura", "Amandoua"]:
+            break
+        else:
+            print(
+                "Tipul serviciului trebuie sa fie Manichiura, Pedichiura, sau Amandoua. Va rugam sa incercati din nou.")
+
+    while True:
+        notes = input("\nIntroduceti notite pentru programarea dumneavoastra (optional, maxim 250 caractere): ")
+        if len(notes) > 250:
+            print("Notitele nu pot avea mai mult de 250 de caractere. Va rugam sa scurtati mesajul.")
+
+        else:
+            break
+    print("Notitele adaugate sunt: %s" % notes if notes else "Nu au fost adaugate notite.")
+
+
+    return {
+        "name" : name,
+        "date" : date,
+        "time" : time,
+        "service_type": service_type,
+        "notes": notes,
+        "owner": current_user["username"],
+    }
+
+
+def display_tasks(tasks):
+
+    # Display all tasks, optionally filtered by a specific date
+    if not tasks:
+        print("\nNu sunt programari in lista.")
+        return
+
+    # Ask for a specific date to filter tasks
+    date_to_display = input("\nIntroduceti data pentru a afisa programarile (ZZ-LL-AAAA),"
+                            " sau apasati Enter pentru toate programarile: ")
+
+    # Ask for a specific service type to filter tasks
+    service_to_display = input("\nIntroduceti tipul serviciului pentru a afisa programarile (Manichiura, Pedichiura,"
+                               " Amandoua), sau apasati Enter pentru toate programarile: ").strip().capitalize()
+
+    filtered_tasks = tasks
+
+    if date_to_display:
+        filtered_tasks = [task for task in filtered_tasks if task['date'] == date_to_display]
+
+    if service_to_display in ["Manichiura", "Pedichiura", "Amandoua"]:
+        filtered_tasks = [task for task in filtered_tasks if task['service_type'] == service_to_display]
+
+    if not filtered_tasks:
+        print(f"\nNu sunt programari pentru criteriile specificate.")
+        return
+
+
+    print("\nLista programarilor:")
+    for i, task in enumerate(filtered_tasks, 1):
+            print(f"Event {i}:" )
+            print(f"    Nume: {task['name']}")
+            print(f"    Data: {task['date']}")
+            print(f"    Ora:  {task['time']}")
+            print(f"    Serviciu: {task['service_type']}")
+            print(f"    Notite: {task['notes'] if task['notes'] else 'Nu au fost adaugate notite.'}")
+            print(f"-" * 20)
+
+
+def edit_task(tasks):
+    if not tasks:
+        print("Nu sunt programari de editat.")
+        return
+
+    display_tasks(tasks)
+    task_number = input("Introduceti numarul task-ului pe care doriti sa il editati: ").strip()
+
+    if task_number.isdigit():
+        task_number = int(task_number)
+        if 1 <= task_number <= len(tasks):
+            task = tasks[task_number - 1]
+            if task["owner"] == current_user["username"] or current_user["role"] == "admin":
+                print("Introduceti noile detalii ale programarii:")
+                tasks[task_number - 1] = handle_input()
+                print("\nProgramarea a fost editata cu succes.")
+                display_tasks(tasks)
+            else:
+                print("Nu aveti permisiunea sa editati aceasta programare.")
+        else:
+            print("Numar de task invalid.")
+    else:
+        print("Numar de task invalid.")
+
+
+def delete_task(tasks):
+    if not tasks:
+        print("Nu sunt programari de sters.")
+        return
+
+    display_tasks(tasks)
+    task_number = input("Introduceti numarul task-ului pe care doriti sa il stergeti: ").strip()
+
+    if task_number.isdigit():
+        task_number = int(task_number)
+        if 1 <= task_number <= len(tasks):
+            task = tasks[task_number - 1]
+            if task["owner"] == current_user["username"] or current_user["role"] == "admin":
+                deleted_task = tasks.pop(task_number - 1)
+                print(f"\nProgramarea '{deleted_task['name']}' a fost stearsa cu succes.")
+                display_tasks(tasks)
+            else:
+                print("Nu aveti permisiunea sa stergeti aceasta programare.")
+        else:
+            print("Numar de task invalid.")
+    else:
+        print("Numar de task invalid.")
+
+
+if __name__ == "__main__":
+    main()
